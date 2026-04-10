@@ -1,0 +1,41 @@
+{{- if eq .Values.internalTLS.certSource "certmanager" }}
+
+{{- $certmanager  := .Values.internalTLS.certmanager -}}
+{{- $extIssuer    := $certmanager.existingIssuer -}}
+{{- $issuerKind   := "Issuer" -}}
+{{- $issuerName   := (include "k8s-rbac-engine-chart.fullname" .) -}}
+
+{{- if and $extIssuer.kind $extIssuer.name }}
+  {{- $issuerKind   = $extIssuer.kind -}}
+  {{- $issuerName   = $extIssuer.name -}}
+{{- end }}
+
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "k8s-rbac-engine-chart.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "k8s-rbac-engine-chart.labels" . | nindent 4 }}
+spec:
+  issuerRef:
+    group: cert-manager.io
+    kind: {{ $issuerKind }}
+    name: {{ $issuerName }}
+  dnsNames:
+    - "{{ include "k8s-rbac-engine-chart.fullname" . }}"
+    - "{{ include "k8s-rbac-engine-chart.fullname" . }}.{{ .Release.Namespace }}"
+    - "{{ include "k8s-rbac-engine-chart.fullname" . }}.{{ .Release.Namespace }}.svc"
+    {{ if $certmanager.extraDnsNames }}
+    {{ range $certmanager.extraDnsNames }}
+    - {{ . }}
+    {{ end }}
+    {{ end }}
+  {{ with $certmanager.extraIPAddresses }}
+  ipAddresses:
+    {{ . | toYaml | nindent 4 }}
+  {{ end }}
+  commonName: "{{ .Release.Namespace }}"
+  secretName: {{ include "k8s-rbac-engine-chart.fullname" . }}
+{{- end }}
