@@ -9,8 +9,8 @@ spec:
   type: {{ .Values.service.type }}
   ports:
     - port: {{ .Values.service.port }}
-      targetPort: https
+      targetPort: apiserver
       protocol: TCP
-      name: https
+      name: apiserver
   selector:
     {{- include "k8s-rbac-engine-chart.selectorLabels" . | nindent 4 }}
